@@ -112,11 +112,11 @@ export interface Context {
 //   It's better to not trigger the same completion for multiple different ContextKind.
 //   For example, the autocompletion of the metricName / the function / the aggregation happens at the same time.
 //   So if you want to trigger your custom completion for metricName / function / aggregation, you should just choose to trigger it for the function for example.
-//   Otherwise you will end up to have the same completion result multiple time.
+//   Otherwise, you will end up to have the same completion result multiple time.
 // * result is the current result of the completion. Usually you don't want to override it but instead to concat your own completion with this one.
 // Typical implementation snippet:
 //     function myCustomEnricher(trigger: ContextKind, result: Completion[]): Completion[] | Promise<Completion[]> {
-//       switch (triggering) {
+//       switch (trigger) {
 //         case ContextKind.Aggregation:
 //           // custom completion
 //           // ...
