@@ -107,6 +107,30 @@ export interface Context {
   labelName?: string;
 }
 
+// EnrichCompletionHandler define a function that will be called during the completion calculation.
+// * `trigger` should be used to decide whenever you would like to trigger your custom completion.
+//   It's better to not trigger the same completion for multiple different ContextKind.
+//   For example, the autocompletion of the metricName / the function / the aggregation happens at the same time.
+//   So if you want to trigger your custom completion for metricName / function / aggregation, you should just choose to trigger it for the function for example.
+//   Otherwise you will end up to have the same completion result multiple time.
+// * result is the current result of the completion. Usually you don't want to override it but instead to concat your own completion with this one.
+// Typical implementation snippet:
+//     function myCustomEnricher(trigger: ContextKind, result: Completion[]): Completion[] | Promise<Completion[]> {
+//       switch (triggering) {
+//         case ContextKind.Aggregation:
+//           // custom completion
+//           // ...
+//           // return result.concat( myCustomCompletionArray )
+//         default:
+//           return result;
+//       }
+//     }
+export type EnrichCompletionHandler = (trigger: ContextKind, result: Completion[]) => Completion[] | Promise<Completion[]>;
+
+function defaultEnricher(trigger: ContextKind, result: Completion[]): Completion[] | Promise<Completion[]> {
+  return result;
+}
+
 function getMetricNameInVectorSelector(tree: SyntaxNode, state: EditorState): string {
   // Find if there is a defined metric name. Should be used to autocomplete a labelValue or a labelName
   // First find the parent "VectorSelector" to be able to find then the subChild "MetricIdentifier" if it exists.
@@ -359,10 +383,12 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode): Context
 export class HybridComplete implements CompleteStrategy {
   private readonly prometheusClient: PrometheusClient | undefined;
   private readonly maxMetricsMetadata: number;
+  private readonly enricher: EnrichCompletionHandler;
 
-  constructor(prometheusClient?: PrometheusClient, maxMetricsMetadata = 10000) {
+  constructor(prometheusClient?: PrometheusClient, maxMetricsMetadata = 10000, enricher = defaultEnricher) {
     this.prometheusClient = prometheusClient;
     this.maxMetricsMetadata = maxMetricsMetadata;
+    this.enricher = enricher;
   }
 
   promQL(context: CompletionContext): Promise<CompletionResult> | CompletionResult | null {
@@ -431,13 +457,16 @@ export class HybridComplete implements CompleteStrategy {
             return this.autocompleteLabelValue(result, context.labelName, context.metricName);
           });
       }
+      asyncResult = asyncResult.then((result) => {
+        return this.enricher(context.kind, result);
+      });
     }
     return asyncResult.then((result) => {
       return arrayToCompletionResult(result, computeStartCompletePosition(tree, pos), pos, completeSnippet, span);
     });
   }
 
-  private autocompleteMetricName(result: Completion[]) {
+  private autocompleteMetricName(result: Completion[]): Completion[] | Promise<Completion[]> {
     if (!this.prometheusClient) {
       return result;
     }
@@ -505,7 +534,7 @@ export class HybridComplete implements CompleteStrategy {
       });
   }
 
-  private autocompleteLabelName(result: Completion[], metricName?: string) {
+  private autocompleteLabelName(result: Completion[], metricName?: string): Completion[] | Promise<Completion[]> {
     if (!this.prometheusClient) {
       return result;
     }
@@ -514,7 +543,7 @@ export class HybridComplete implements CompleteStrategy {
     });
   }
 
-  private autocompleteLabelValue(result: Completion[], labelName?: string, metricName?: string) {
+  private autocompleteLabelValue(result: Completion[], labelName?: string, metricName?: string): Completion[] | Promise<Completion[]> {
     if (!this.prometheusClient || !labelName) {
       return result;
     }
