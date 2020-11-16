@@ -32,27 +32,29 @@ export interface CompleteStrategy {
 
 // CompleteConfiguration should be used to customize the autocompletion.
 export interface CompleteConfiguration {
-  // Provide these settings when not using a custom PrometheusClient.
-  url?: string;
-  lookbackInterval?: number;
-  httpErrorHandler?: (error: any) => void;
-  fetchFn?: FetchFn;
-
+  remote: {
+    // Provide these settings when not using a custom PrometheusClient.
+    url?: string;
+    lookbackInterval?: number;
+    httpErrorHandler?: (error: any) => void;
+    fetchFn?: FetchFn;
+    // When providing this custom PrometheusClient, the settings above will not be used.
+    prometheusClient?: PrometheusClient;
+  };
   // maxMetricsMetadata is the maximum limit of the number of metrics in Prometheus.
   // Under this limit, it allows the completion to get the metadata of the metrics.
   maxMetricsMetadata?: number;
-
-  // When providing this custom PrometheusClient, the settings above will not be used.
-  prometheusClient?: PrometheusClient;
 }
 
 export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
-  if (conf?.prometheusClient) {
-    return new HybridComplete(conf.prometheusClient, conf.maxMetricsMetadata);
+  if (conf?.remote.prometheusClient) {
+    return new HybridComplete(conf.remote.prometheusClient, conf.maxMetricsMetadata);
   }
-  if (conf?.url) {
+  if (conf?.remote.url) {
     return new HybridComplete(
-      new CachedPrometheusClient(new HTTPPrometheusClient(conf.url, conf.httpErrorHandler, conf.lookbackInterval, conf.fetchFn)),
+      new CachedPrometheusClient(
+        new HTTPPrometheusClient(conf.remote.url, conf.remote.httpErrorHandler, conf.remote.lookbackInterval, conf.remote.fetchFn)
+      ),
       conf.maxMetricsMetadata
     );
   }
