@@ -25,7 +25,8 @@
 set -ex
 
 # build the lib
-tsc
+#tsc --outDir lib/esm/
+tsc --module commonjs --target es5 --outDir lib/ --downlevelIteration
 
 # Finally, copy some useful files into the distribution folder for documentation purposes.
 cp ./README.md ./lib/README.md
