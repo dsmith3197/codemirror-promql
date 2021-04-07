@@ -31,6 +31,7 @@ export declare class HybridComplete implements CompleteStrategy {
     private readonly prometheusClient;
     private readonly maxMetricsMetadata;
     constructor(prometheusClient?: PrometheusClient, maxMetricsMetadata?: number);
+    getPrometheusClient(): PrometheusClient | undefined;
     promQL(context: CompletionContext): Promise<CompletionResult | null> | CompletionResult | null;
     private autocompleteMetricName;
     private autocompleteLabelName;

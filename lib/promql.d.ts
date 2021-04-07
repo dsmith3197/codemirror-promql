@@ -1,5 +1,6 @@
 import { Extension } from '@codemirror/state';
-import { CompleteConfiguration } from './complete';
+import { CompleteConfiguration, CompleteStrategy } from './complete';
+import { LintStrategy } from './lint';
 import { LezerLanguage } from '@codemirror/language';
 export declare const promQLLanguage: LezerLanguage;
 /**
@@ -7,12 +8,15 @@ export declare const promQLLanguage: LezerLanguage;
  */
 export declare class PromQLExtension {
     private complete;
-    private readonly lint;
+    private lint;
     private enableCompletion;
     private enableLinter;
     constructor();
     setComplete(conf?: CompleteConfiguration): PromQLExtension;
+    getComplete(): CompleteStrategy;
     activateCompletion(activate: boolean): PromQLExtension;
+    setLinter(linter: LintStrategy): PromQLExtension;
+    getLinter(): LintStrategy;
     activateLinter(activate: boolean): PromQLExtension;
     asExtension(): Extension;
 }
